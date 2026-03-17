@@ -1,0 +1,11 @@
+commit:
+	@if [ -z "$(m)" ]; then \
+		git add . ; \
+		git commit -m "commit"; \
+	else \
+		git add . ; \
+		git commit -m "$(m)"; \
+	fi
+
+push:
+	git push

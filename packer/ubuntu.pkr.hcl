@@ -10,7 +10,7 @@ packer {
 source "proxmox-iso" "ubuntu_server" {
   proxmox_url              = "https://192.168.13.13:8006/api2/json"
   username                 = "juan.larrondo@pve!terraform"
-  token                    = "juan.larrondo@pve!terraform=82918061-7fd1-4c0b-8da9-24b2d5b542e7"
+  token                    = "82918061-7fd1-4c0b-8da9-24b2d5b542e7"
   insecure_skip_tls_verify = true
 
   node                 = "proxmoxdev01"
