@@ -31,3 +31,6 @@ push:
 	@echo "⬆️  Pusheando cambios al repositorio...";
 	@echo "==========================================";
 	@git push
+	@echo "==========================================";
+	@echo "✅  Cambios pusheados al repositorio.";
+	@echo "==========================================";
