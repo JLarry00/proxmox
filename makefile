@@ -1,3 +1,6 @@
+all:
+	echo "Run 'make commit m=\"your message\"' to commit, or 'make push' to push."
+
 .PHONY: commit push
 
 commit:
