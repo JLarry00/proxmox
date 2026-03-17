@@ -26,6 +26,10 @@ resource "proxmox_virtual_environment_vm" "test_backend_01" {
   agent {
     enabled = true # Requiere que qemu-guest-agent esté instalado en la plantilla
   }
+  
+  network_device {
+    bridge = "vmbr1" # Sustituir por el nombre real de tu puente de red
+  }
 
   # Bloque de configuración de Cloud-Init
   initialization {

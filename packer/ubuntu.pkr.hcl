@@ -8,9 +8,9 @@ packer {
 }
 
 source "proxmox-iso" "ubuntu_server" {
-  proxmox_url              = "https://<IP_PROXMOXDEV01>:8006/api2/json"
+  proxmox_url              = "https://192.168.13.13:8006/api2/json"
   username                 = "juan.larrondo@pve!terraform"
-  token                    = "<TU_SECRET_GENERADO>"
+  token                    = "juan.larrondo@pve!terraform=82918061-7fd1-4c0b-8da9-24b2d5b542e7"
   insecure_skip_tls_verify = true
 
   node                 = "proxmoxdev01"
@@ -36,7 +36,7 @@ source "proxmox-iso" "ubuntu_server" {
 
   network_adapters {
     model    = "virtio"
-    bridge   = "vmbr0" # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
+    bridge   = "vmbr1" # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
   }
 
   # Automatización de la instalación inyectando el user-data
