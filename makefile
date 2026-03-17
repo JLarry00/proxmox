@@ -16,10 +16,18 @@ push:
 	@if ! git diff-index --quiet HEAD --; then \
 		make commit m="makefile: add commit and push"; \
 		echo ""; \
-		echo "Changes detected, committing and pushing..."; \
+		echo "=================================================="; \
+		echo "🔄  Cambios detectados. Comiteando y pusheando..."; \
+		echo "=================================================="; \
+		echo ""; \
+	else \
+		echo ""; \
+		echo "------------------------------------------"; \
+		echo "✅  No hay cambios para commitear."; \
+		echo "------------------------------------------"; \
 		echo ""; \
 	fi
-	echo "";
-	echo "Pushing changes...";
-	echo "";
-	git push;
+	echo "==========================================";
+	echo "⬆️  Pusheando cambios al repositorio...";
+	echo "==========================================";
+	git push
