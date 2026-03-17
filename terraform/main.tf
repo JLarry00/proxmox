@@ -35,8 +35,8 @@ resource "proxmox_virtual_environment_vm" "test_backend_01" {
       }
     }
     user_account {
-      username = "admin_user"
-      password = "Password123!" # Contraseña configurada a fuego
+      username = "admin"
+      password = "admin" # Contraseña configurada a fuego
     }
   }
 }
