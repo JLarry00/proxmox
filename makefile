@@ -19,7 +19,7 @@ push:
 		echo "🔄  Cambios detectados. Comiteando y pusheando..."; \
 		echo "=================================================="; \
 		echo ""; \
-		make commit m="makefile: add commit and push"; \
+		make commit m="makefile: add - commit - push"; \
 	else \
 		echo ""; \
 		echo "------------------------------------------"; \
