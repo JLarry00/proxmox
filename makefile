@@ -13,4 +13,7 @@ commit:
 	fi
 
 push:
+	@if ! git diff-index --quiet HEAD --; then \
+		make commit m="makefile: add commit and push"; \
+	fi
 	git push
