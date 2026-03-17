@@ -15,5 +15,7 @@ commit:
 push:
 	@if ! git diff-index --quiet HEAD --; then \
 		make commit m="makefile: add commit and push"; \
+		echo "Changes detected, committing and pushing..."; \
 	fi
-	git push
+	echo "Pushing changes...";
+	git push;
