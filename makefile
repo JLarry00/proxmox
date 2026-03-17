@@ -1,3 +1,6 @@
+
+.PHONY: commit push
+
 commit:
 	@if [ -z "$(m)" ]; then \
 		git add . ; \
