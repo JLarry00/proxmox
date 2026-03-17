@@ -1,4 +1,3 @@
-
 .PHONY: commit push
 
 commit:
