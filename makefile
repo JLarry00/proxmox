@@ -1,7 +1,12 @@
-all:
-	echo "Run 'make commit m=\"your message\"' to commit, or 'make push' to push."
+all: help
 
-.PHONY: commit push
+help:
+	@echo "Uso del Makefile:"
+	@echo "  make commit m=\"mensaje\"      - Agrega y commitea los cambios con el mensaje indicado."
+	@echo "  make push                    - Commitea (si hay cambios) y pushea al repositorio remoto."
+	@echo "  make help                    - Muestra esta ayuda."
+
+.PHONY: commit push help
 
 commit:
 	@if [ -z "$(m)" ]; then \
