@@ -8,9 +8,9 @@ chmod +x ./scripts/commit.sh
 ./scripts/commit.sh
 
 echo ""
-echo "=========================================="
+echo "========================================"
 echo "⬆️  Pusheando cambios al repositorio..."
-echo "=========================================="
+echo "========================================"
 echo ""
 git push
 echo ""
