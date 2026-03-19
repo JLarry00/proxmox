@@ -30,4 +30,3 @@ fi
 
 git add .
 git commit -m "$MSG"
-
