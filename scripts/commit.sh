@@ -24,9 +24,9 @@ if [ -n "$CHANGES" ]; then
   git add .
   git commit -m "$MENSAJE"
   echo ""
-  echo "=================================================="
+  echo "==============================================="
   echo "🔄  Cambios detectados. Comiteados con mensaje: $MENSAJE."
-  echo "=================================================="
+  echo "==============================================="
   echo ""
 else
   echo ""
