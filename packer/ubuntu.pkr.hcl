@@ -67,11 +67,23 @@ source "proxmox-iso" "ubuntu_server" {
   boot_command = var.boot_command
   http_directory = "http"
   
-  ssh_username   = "admin_user"
+  ssh_username   = var.ssh_username
   ssh_password   = "Password123!"
   ssh_timeout    = "20m"
 }
 
 build {
   sources = ["source.proxmox-iso.${var.template_name}_server"]
+
+  provisioner "shell" {
+    execute_command = "echo 'Password123!' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
+    inline = [
+      "userdel -r admin_user || true",
+      "rm -f /etc/ssh/ssh_host_*",
+      "truncate -s 0 /etc/machine-id",
+      "rm -f /var/lib/dbus/machine-id",
+      "ln -s /etc/machine-id /var/lib/dbus/machine-id || true",
+      "apt-get clean"
+    ]
+  }
 }

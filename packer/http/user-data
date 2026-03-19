@@ -12,7 +12,7 @@ autoinstall:
       name: direct
   identity:
     hostname: ubuntu-template
-    username: admin_user
+    username: {{ .ssh_username }}
     # La contraseña en autoinstall debe estar hasheada. 
     # Sustituye este valor por el hash de tu contraseña generado mediante 'openssl passwd -6 <contraseña>' en una terminal.
     # Nuestro caso: openssl passwd -6 "Password123!"
