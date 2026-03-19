@@ -7,19 +7,35 @@ packer {
   }
 }
 
+
+
+variable "proxmox_url" { type = string, default = "https://192.168.13.13:8006/api2/json" }
+variable "proxmox_username" { type = string, default = "juan.larrondo@pve!terraform" }
+variable "proxmox_token" { type = string, default = "82918061-7fd1-4c0b-8da9-24b2d5b542e7" }
+variable "proxmox_node" { type = string, default = "proxmoxdev01" }
+variable "template_vm_id" { type = number, default = 400 }
+variable "disk_size" { type = string, default = "20G" }
+variable "network_bridge" { type = string, default = "vmbr1" }
+variable "iso_url" { type = string, default = "https://releases.ubuntu.com/22.04/ubuntu-22.04.4-live-server-amd64.iso" }
+variable "iso_checksum" { type = string, default = "45f873de9f8cb637345d6e66a583762730bbea30277ef7b32c9c3bd6700a32b2" }
+variable "template_name" { type = string, default = "ubuntu-2204-template-v1" }
+variable "template_description" { type = string, default = "Plantilla inmutable Ubuntu 22.04" }
+
+
+
 source "proxmox-iso" "ubuntu_server" {
-  proxmox_url              = "https://192.168.13.13:8006/api2/json"
-  username                 = "juan.larrondo@pve!terraform"
-  token                    = "82918061-7fd1-4c0b-8da9-24b2d5b542e7"
+  proxmox_url              = var.proxmox_url
+  username                 = var.proxmox_username
+  token                    = var.proxmox_token
   insecure_skip_tls_verify = true
 
-  node                 = "proxmoxdev01"
-  vm_id                = 400 # ID reservado para la plantilla base
-  vm_name              = "ubuntu-2204-template-v1"
-  template_description = "Plantilla inmutable Ubuntu 22.04"
+  node                 = var.proxmox_node
+  vm_id                = var.template_vm_id # ID reservado para la plantilla base
+  vm_name              = var.template_name
+  template_description = var.template_description
 
-  iso_url          = "https://releases.ubuntu.com/22.04/ubuntu-22.04.4-live-server-amd64.iso"
-  iso_checksum     = "45f873de9f8cb637345d6e66a583762730bbea30277ef7b32c9c3bd6700a32b2"
+  iso_url          = var.iso_url
+  iso_checksum     = var.iso_checksum
   
   # Almacenamiento y hardware
   os                       = "l26"
@@ -28,7 +44,7 @@ source "proxmox-iso" "ubuntu_server" {
   scsi_controller          = "virtio-scsi-pci"
   
   disks {
-    disk_size         = "20G"
+    disk_size         = var.disk_size
     format            = "raw"
     storage_pool      = "local-lvm"
     type              = "virtio"
@@ -36,7 +52,7 @@ source "proxmox-iso" "ubuntu_server" {
 
   network_adapters {
     model    = "virtio"
-    bridge   = "vmbr1" # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
+    bridge   = var.network_bridge # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
   }
 
   # Automatización de la instalación inyectando el user-data
