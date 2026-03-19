@@ -20,6 +20,14 @@ variable "iso_url" { type = string, default = "https://releases.ubuntu.com/22.04
 variable "iso_checksum" { type = string, default = "45f873de9f8cb637345d6e66a583762730bbea30277ef7b32c9c3bd6700a32b2" }
 variable "template_name" { type = string, default = "ubuntu-2204-template-v1" }
 variable "template_description" { type = string, default = "Plantilla inmutable Ubuntu 22.04" }
+variable "cores" { type = number, default = 2 }
+variable "memory" { type = number, default = 2048 }
+variable "storage_pool" { type = string, default = "local-lvm" }
+variable "boot_command" { type = list(string), default = [
+    "e<down><down><down><end>",
+    " autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ",
+    "<f10>"
+  ] }
 
 
 
@@ -39,14 +47,14 @@ source "proxmox-iso" "ubuntu_server" {
   
   # Almacenamiento y hardware
   os                       = "l26"
-  cores                    = 2
-  memory                   = 2048
+  cores                    = var.cores
+  memory                   = var.memory
   scsi_controller          = "virtio-scsi-pci"
   
   disks {
     disk_size         = var.disk_size
     format            = "raw"
-    storage_pool      = "local-lvm"
+    storage_pool      = var.storage_pool
     type              = "virtio"
   }
 
@@ -56,11 +64,7 @@ source "proxmox-iso" "ubuntu_server" {
   }
 
   # Automatización de la instalación inyectando el user-data
-  boot_command = [
-    "e<down><down><down><end>",
-    " autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ",
-    "<f10>"
-  ]
+  boot_command = var.boot_command
   http_directory = "http"
   
   ssh_username   = "admin_user"
@@ -69,5 +73,5 @@ source "proxmox-iso" "ubuntu_server" {
 }
 
 build {
-  sources = ["source.proxmox-iso.ubuntu_server"]
+  sources = ["source.proxmox-iso.${var.template_name}_server"]
 }
