@@ -11,13 +11,13 @@ help:
 .PHONY: commit push fcommit push fpush help
 
 commit:
-	@bash ./scripts/commit.sh "$(m)"
+	@FORCE="0" bash ./scripts/commit.sh "$(m)"
 
 fcommit:
-	@bash ./scripts/commit.sh -force
+	@FORCE="1" bash ./scripts/commit.sh
 
 push:
-	@FORCE="$(force)" bash ./scripts/push.sh
+	@FORCE="0" bash ./scripts/push.sh
 
 fpush:
 	@FORCE="1" bash ./scripts/push.sh
