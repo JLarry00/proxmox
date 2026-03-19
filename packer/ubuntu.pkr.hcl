@@ -1,10 +1,10 @@
 packer {
-  required_plugins {
-    proxmox = {
-      version = ">= 1.1.3"
-      source  = "github.com/hashicorp/proxmox"
-    }
-  }
+	required_plugins {
+		proxmox = {
+			version = ">= 1.1.3"
+			source  = "github.com/hashicorp/proxmox"
+		}
+	}
 }
 
 
@@ -24,66 +24,76 @@ variable "cores" { type = number, default = 2 }
 variable "memory" { type = number, default = 2048 }
 variable "storage_pool" { type = string, default = "local-lvm" }
 variable "boot_command" { type = list(string), default = [
-    "e<down><down><down><end>",
-    " autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ",
-    "<f10>"
-  ] }
+	"e<down><down><down><end>",
+	" autoinstall ds=nocloud-net\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ ",
+	"<f10>"
+] }
+variable "packer_username" { type = string, default = "packer_user" }
+variable "packer_password_plain" { type = string, sensitive = true, default = "Password123!" }
+variable "packer_password_hash" { type = string, sensitive = true, default = "$6$XzhYcZaTi2Qazqyc$hXTUmEzo3akmHWUUwL7aYq/BxEzyB7TgYZqXaSm1RUS9bZsW8ZXOyGwG8BeIyrwP/CO7u5yF3ri1.zk89tgQe1" }
 
 
 
 source "proxmox-iso" "ubuntu_server" {
-  proxmox_url              = var.proxmox_url
-  username                 = var.proxmox_username
-  token                    = var.proxmox_token
-  insecure_skip_tls_verify = true
+	proxmox_url              = var.proxmox_url
+	username                 = var.proxmox_username
+	token                    = var.proxmox_token
+	insecure_skip_tls_verify = true
 
-  node                 = var.proxmox_node
-  vm_id                = var.template_vm_id # ID reservado para la plantilla base
-  vm_name              = var.template_name
-  template_description = var.template_description
+	node                 = var.proxmox_node
+	vm_id                = var.template_vm_id # ID reservado para la plantilla base
+	vm_name              = var.template_name
+	template_description = var.template_description
 
-  iso_url          = var.iso_url
-  iso_checksum     = var.iso_checksum
+	iso_url          = var.iso_url
+	iso_checksum     = var.iso_checksum
   
-  # Almacenamiento y hardware
-  os                       = "l26"
-  cores                    = var.cores
-  memory                   = var.memory
-  scsi_controller          = "virtio-scsi-pci"
+	# Almacenamiento y hardware
+	os                       = "l26"
+	cores                    = var.cores
+	memory                   = var.memory
+	scsi_controller          = "virtio-scsi-pci"
   
-  disks {
-    disk_size         = var.disk_size
-    format            = "raw"
-    storage_pool      = var.storage_pool
-    type              = "virtio"
-  }
+	disks {
+		disk_size         = var.disk_size
+		format            = "raw"
+		storage_pool      = var.storage_pool
+		type              = "virtio"
+	}
 
-  network_adapters {
-    model    = "virtio"
-    bridge   = var.network_bridge # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
-  }
+	network_adapters {
+		model    = "virtio"
+		bridge   = var.network_bridge # Sustituir por la interfaz de red correspondiente (ej. localnetwork)
+	}
 
-  # Automatización de la instalación inyectando el user-data
-  boot_command = var.boot_command
-  http_directory = "http"
-  
-  ssh_username   = var.ssh_username
-  ssh_password   = "Password123!"
-  ssh_timeout    = "20m"
+	# Automatización de la instalación inyectando el user-data
+	boot_command = var.boot_command
+	// http_directory = "http"
+  http_content = {
+	"/user-data" = templatefile("${path.root}/http/user-data.pkrtpl", { 
+	  user = var.packer_username
+	  pass_hash = var.packer_password_hash
+	})
+	"/meta-data" = ""
+	}
+
+	ssh_username = "admin"
+	ssh_password = var.packer_password_plain
+	ssh_timeout = "20m"
 }
 
 build {
-  sources = ["source.proxmox-iso.${var.template_name}_server"]
+	sources = ["source.proxmox-iso.${var.template_name}_server"]
 
-  provisioner "shell" {
-    execute_command = "echo 'Password123!' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
-    inline = [
-      "userdel -r admin_user || true",
-      "rm -f /etc/ssh/ssh_host_*",
-      "truncate -s 0 /etc/machine-id",
-      "rm -f /var/lib/dbus/machine-id",
-      "ln -s /etc/machine-id /var/lib/dbus/machine-id || true",
-      "apt-get clean"
-    ]
-  }
+	provisioner "shell" {
+		execute_command = "echo 'Password123!' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
+		inline = [
+			"userdel -r admin_user || true",
+			"rm -f /etc/ssh/ssh_host_*",
+			"truncate -s 0 /etc/machine-id",
+			"rm -f /var/lib/dbus/machine-id",
+			"ln -s /etc/machine-id /var/lib/dbus/machine-id || true",
+			"apt-get clean"
+		]
+	}
 }
