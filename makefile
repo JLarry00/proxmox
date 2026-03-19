@@ -7,7 +7,7 @@ help:
 	@echo "  make push force                  - Commitea con mensaje predeterminado y pushea."
 	@echo "  make help                        - Muestra esta ayuda."
 
-.PHONY: commit push help
+.PHONY: commit push help 
 
 commit:
 	@if [ -z "$(m)" ]; then \
