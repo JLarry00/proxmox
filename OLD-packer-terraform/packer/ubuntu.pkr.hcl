@@ -18,7 +18,7 @@ variable "disk_size" { type = string, default = "20G" }
 variable "network_bridge" { type = string, default = "vmbr1" }
 variable "iso_url" { type = string, default = "https://releases.ubuntu.com/22.04/ubuntu-22.04.4-live-server-amd64.iso" }
 variable "iso_checksum" { type = string, default = "45f873de9f8cb637345d6e66a583762730bbea30277ef7b32c9c3bd6700a32b2" }
-variable "template_name" { type = string, default = "ubuntu-2204-template-v1" }
+variable "template_name" { type = string, default = "ubuntu-2204-base-image" }
 variable "template_description" { type = string, default = "Plantilla inmutable Ubuntu 22.04" }
 variable "cores" { type = number, default = 2 }
 variable "memory" { type = number, default = 2048 }
@@ -34,7 +34,7 @@ variable "packer_password_hash" { type = string, sensitive = true, default = "$6
 
 
 
-source "proxmox-iso" "ubuntu_server" {
+source "proxmox-iso" "base_image" {
 	proxmox_url              = var.proxmox_url
 	username                 = var.proxmox_username
 	token                    = var.proxmox_token
@@ -70,11 +70,11 @@ source "proxmox-iso" "ubuntu_server" {
 	boot_command = var.boot_command
 	// http_directory = "http"
 	http_content = {
-	"/user-data" = templatefile("${path.root}/http/user-data.pkrtpl", { 
-	  user = var.packer_username
-	  pass_hash = var.packer_password_hash
-	})
-	"/meta-data" = ""
+		"/user-data" = templatefile("${path.root}/http/user-data.pkrtpl", { 
+			user = var.packer_username
+			pass_hash = var.packer_password_hash
+		})
+		"/meta-data" = ""
 	}
 
 	ssh_username = var.packer_username
@@ -83,7 +83,7 @@ source "proxmox-iso" "ubuntu_server" {
 }
 
 build {
-	sources = ["source.proxmox-iso.${var.template_name}_server"]
+	sources = ["source.proxmox-iso.base_image"]
 
 	provisioner "shell" {
 		execute_command = "echo '${var.packer_password_plain}' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
