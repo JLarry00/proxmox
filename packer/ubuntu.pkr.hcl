@@ -69,7 +69,7 @@ source "proxmox-iso" "ubuntu_server" {
 	# Automatización de la instalación inyectando el user-data
 	boot_command = var.boot_command
 	// http_directory = "http"
-  http_content = {
+	http_content = {
 	"/user-data" = templatefile("${path.root}/http/user-data.pkrtpl", { 
 	  user = var.packer_username
 	  pass_hash = var.packer_password_hash
@@ -77,7 +77,7 @@ source "proxmox-iso" "ubuntu_server" {
 	"/meta-data" = ""
 	}
 
-	ssh_username = "admin"
+	ssh_username = var.packer_username
 	ssh_password = var.packer_password_plain
 	ssh_timeout = "20m"
 }
@@ -86,9 +86,9 @@ build {
 	sources = ["source.proxmox-iso.${var.template_name}_server"]
 
 	provisioner "shell" {
-		execute_command = "echo 'Password123!' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
+		execute_command = "echo '${var.packer_password_plain}' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
 		inline = [
-			"userdel -r admin_user || true",
+			"userdel -r ${var.packer_username} || true",
 			"rm -f /etc/ssh/ssh_host_*",
 			"truncate -s 0 /etc/machine-id",
 			"rm -f /var/lib/dbus/machine-id",
