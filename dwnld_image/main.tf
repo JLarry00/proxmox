@@ -57,6 +57,12 @@ variable "vm_id" {
 	default	= 500
 }
 
+# Número de VMs a crear.
+variable "vm_count" {
+	type	= number
+	default	= 1
+}
+
 # Bridge de red de Proxmox al que se conectará la VM (por ejemplo, vmbr0, vmbr1).
 variable "network_bridge" {
 	type	= string
@@ -102,9 +108,10 @@ resource "proxmox_virtual_environment_download_file" "os_image" {
 # Recurso: Creación de la VM desde la imagen     #
 ##################################################
 resource "proxmox_virtual_environment_vm" "backend_node" {
-	name		= var.vm_name		# Nombre asignado a la VM.
-	node_name	= var.proxmox_node	# Nodo Proxmox destino.
-	vm_id		= var.vm_id			# ID único para la VM.
+	count		= var.vm_count							# Número de VMs a crear.
+	name		= "${var.vm_name}-${count.index + 1}"	# Nombre asignado a la VM.
+	node_name	= var.proxmox_node						# Nodo Proxmox destino.
+	vm_id		= var.vm_id + count.index				# ID único para la VM.
 
 	# Habilita el agente QEMU Guest Agent para mejor integración de la VM con Proxmox
 	agent {

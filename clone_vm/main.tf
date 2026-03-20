@@ -51,6 +51,12 @@ variable "vm_id" {
 	default	= 500
 }
 
+# Número de VMs a crear.
+variable "vm_count" {
+	type	= number
+	default	= 1
+}
+
 # Bridge de red de Proxmox al que se conectará la VM (por ejemplo, vmbr0, vmbr1).
 variable "network_bridge" {
 	type	= string
@@ -88,9 +94,10 @@ provider "proxmox" {
 # Este recurso clona una VM existente (normalmente configurada como plantilla en Proxmox)
 # y aplica parámetros de red y acceso con Cloud-Init.
 resource "proxmox_virtual_environment_vm" "backend_node" {
-	name		= var.vm_name		# Nombre asignado a la VM clonada.
-	node_name	= var.proxmox_node	# Nodo Proxmox destino.
-	vm_id		= var.vm_id			# ID asignado a la nueva VM.
+	count		= var.vm_count							# Número de VMs a crear.
+	name		= "${var.vm_name}-${count.index + 1}"	# Nombre asignado a la VM clonada.
+	node_name	= var.proxmox_node						# Nodo Proxmox destino.
+	vm_id		= var.vm_id + count.index				# ID asignado a la nueva VM.
 
 	# Sección de clonación: crea la máquina basada en una VM template definida por 'template_vm_id'.
 	clone {

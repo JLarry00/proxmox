@@ -52,6 +52,12 @@ variable "vm_id" {
 	default	= 500
 }
 
+# Número de VMs a crear.
+variable "vm_count" {
+	type	= number
+	default	= 1
+}
+
 # Bridge de red de Proxmox al que se conectará la VM.
 variable "network_bridge" {
 	type	= string
@@ -85,9 +91,10 @@ provider "proxmox" {
 # Recurso: Creación de la VM desde una imagen existente   #
 ###########################################################
 resource "proxmox_virtual_environment_vm" "backend_node" {
-	name		= var.vm_name
+	count		= var.vm_count
+	name		= "${var.vm_name}-${count.index + 1}"
 	node_name	= var.proxmox_node
-	vm_id		= var.vm_id
+	vm_id		= var.vm_id + count.index
 
 	agent {
 		enabled	= true
