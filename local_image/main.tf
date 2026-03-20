@@ -33,10 +33,11 @@ variable "proxmox_node" {
 	default	= "proxmoxdev01"
 }
 
-# Archivo de imagen existente a utilizar como base para la VM.
+# Archivo de imagen existente en Proxmox a utilizar como base para la VM.
 variable "existing_image_file" {
-	type	= string
-	default	= "ubuntu-2204-from-image"
+	type    = string
+	default = "local:iso/ubuntu-22.04-server-cloudimg-amd64.img"
+	description = "Ruta a la imagen en el sistema de archivos de Proxmox. Formato requerido: <nombre_datastore>:iso/<nombre_archivo_con_extension>"
 }
 
 # Nombre de la VM a crear.
