@@ -36,10 +36,5 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-
-# Ignore all files in the scripts directory except README or explanatory files
-scripts/*
-!scripts/*.md
-
 # Ignore environment variables files
 *.env

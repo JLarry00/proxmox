@@ -69,3 +69,8 @@ El proyecto incluye un `makefile` que utiliza la lógica dentro de la carpeta `s
 
 ---
 *Documentación generada y mantenida para estandarizar los despliegues de infraestructura en Proxmox.*
+## 📝 To Do
+
+- [ ] Configuración de Backend Remoto: Implementar un servicio externo (ej. contenedor LXC con PostgreSQL en Proxmox) y definir el bloque backend "pg" {} u otro compatible en los archivos main.tf para centralizar el archivo de estado (terraform.tfstate) y habilitar el bloqueo concurrente (state locking).
+
+¡Sugerencias y mejoras son bienvenidas!
