@@ -24,13 +24,13 @@ provider "proxmox" {
 # Recurso: Creación de la VM desde una imagen existente   #
 ###########################################################
 resource "proxmox_virtual_environment_vm" "backend_node" {
-	count	= var.vm_count
-	name	= "${var.vm_name}-${count.index + 1}"
+	count		= var.vm_count
+	name		= "${var.vm_name}-${count.index + 1}"
 	node_name	= var.proxmox_node
-	vm_id	= var.vm_id + count.index
+	vm_id		= var.vm_id + count.index
 
 	agent {
-		enabled	= true
+		enabled	= var.agent_enabled
 	}
 
 	cpu {
@@ -43,9 +43,9 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 
 	disk {
 		datastore_id	= "local-lvm"
-		file_id	= var.existing_image_file
-		interface	= "virtio0"
-		size	= var.disk_size
+		file_id			= var.existing_image_file
+		interface		= "virtio0"
+		size			= var.disk_size
 	}
 
 	network_device {
@@ -63,4 +63,10 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 			password	= var.vm_password
 		}
 	}
+}
+
+
+output "vm_ipv4_addresses" {
+	description	= "Direcciones IP asignadas a las máquinas virtuales por DHCP"
+	value		= [for vm in proxmox_virtual_environment_vm.backend_node : vm.ipv4_addresses]
 }

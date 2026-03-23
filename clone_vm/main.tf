@@ -10,72 +10,6 @@ terraform {
 	}
 }
 
-####################################
-# Definición de variables globales #
-####################################
-
-# URL de acceso a la API de Proxmox, incluyendo protocolo, IP/host y puerto.
-variable "proxmox_endpoint" {
-	type	= string
-	default	= "https://192.168.13.13:8006/"
-}
-
-# Token de acceso a la API de Proxmox. Marcada como sensible para proteger la credencial.
-variable "proxmox_api_token" {
-	type		= string
-	sensitive	= true
-	default		= "juan.larrondo@pve!terraform=82918061-7fd1-4c0b-8da9-24b2d5b542e7"
-}
-
-# Nombre del nodo Proxmox donde se desplegará la VM clonada.
-variable "proxmox_node" {
-	type	= string
-	default	= "proxmoxdev01"
-}
-
-# ID de la VM plantilla/original desde la que se hará el clon.
-variable "template_vm_id" {
-	type	= number
-	default	= 400
-}
-
-# Nombre a asignar a la nueva VM clonada.
-variable "vm_name" {
-	type	= string
-	default	= "ubuntu-2204-clone-vm"
-}
-
-# ID único para identificar la nueva VM en Proxmox. Debe ser distinto de otras VMs en el mismo nodo.
-variable "vm_id" {
-	type	= number
-	default	= 500
-}
-
-# Número de VMs a crear.
-variable "vm_count" {
-	type	= number
-	default	= 1
-}
-
-# Bridge de red de Proxmox al que se conectará la VM (por ejemplo, vmbr0, vmbr1).
-variable "network_bridge" {
-	type	= string
-	default	= "vmbr1"
-}
-
-# Usuario por defecto a crear mediante Cloud-Init en la VM.
-variable "vm_username" {
-	type	= string
-	default	= "admin"
-}
-
-# Contraseña para el usuario anterior. Por seguridad marcada como sensible.
-variable "vm_password" {
-	type		= string
-	sensitive	= true
-	default		= "admin"
-}
-
 ##############################
 # Configuración del provider #
 ##############################
@@ -108,6 +42,14 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 	# Habilita el agente QEMU Guest Agent para mejorar integración de la VM con Proxmox (p. ej. reporte de IP).
 	agent {
 		enabled	= true
+	}
+
+	cpu {
+		cores	= var.cpu_cores
+	}
+
+	memory {
+		dedicated	= var.memory_mb
 	}
 
 	# Configura la interfaz de red, conectando la VM al bridge especificado.

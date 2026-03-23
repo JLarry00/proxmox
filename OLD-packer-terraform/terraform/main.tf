@@ -14,19 +14,19 @@ provider "proxmox" {
 }
 
 resource "proxmox_virtual_environment_vm" "test_backend_01" {
-  name        = "test-backend-01"
-  node_name   = "proxmoxdev01"
-  vm_id       = 500 # ID fuera del rango actual (100-118)
+  name      = "test-backend-01"
+  node_name = "proxmoxdev01"
+  vm_id     = 500 # ID fuera del rango actual (100-118)
 
   clone {
     vm_id = 400 # Sustituye por el ID de una plantilla existente en Proxmox
-    full = true
+    full  = true
   }
 
   agent {
     enabled = true # Requiere que qemu-guest-agent esté instalado en la plantilla
   }
-  
+
   network_device {
     bridge = "vmbr1" # Sustituir por el nombre real de tu puente de red
   }
