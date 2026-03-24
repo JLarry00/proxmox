@@ -1,3 +1,5 @@
+# main_local_image.tf
+
 #############################
 # Terraform Configuration   #
 #############################
