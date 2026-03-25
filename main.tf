@@ -55,6 +55,8 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 	}
 
 	initialization {
+		user_data_file_id = proxmox_virtual_environment_file.user_data.id
+
 		ip_config {
 			ipv4 {
 				address	= "dhcp"

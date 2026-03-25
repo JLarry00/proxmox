@@ -1,0 +1,10 @@
+#cloud-config
+packages:
+%{ for pkg in custom_packages ~}
+  - ${pkg}
+%{ endfor ~}
+
+runcmd:
+%{ for cmd in custom_scripts ~}
+  - ${cmd}
+%{ endfor ~}
