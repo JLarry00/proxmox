@@ -69,6 +69,23 @@ variable "agent_enabled" {
 	type	= bool
 }
 
+# Datastore ID donde se almacenará la imagen LXC.
+variable "CT_template_datastore_id" {
+	type	= string
+}
+
+# Datastore ID donde se almacenará el disco de la VM.
+variable "CT_disk_datastore_id" {
+	type	= string
+}
+
+# Lista de IPs a asignar a los contenedores LXC.
+variable "lxc_ips" {
+  type        = list(string)
+  description = "Lista exacta de IPs (con formato CIDR) a asignar. Define la cantidad de contenedores a crear."
+  # Ejemplo de uso al ejecutar: terraform apply -var 'lxc_ips=["172.16.20.15/24", "172.16.20.22/24"]'
+}
+
 ################################################
 # Variables exclusivas para clonar desde molde #
 ################################################

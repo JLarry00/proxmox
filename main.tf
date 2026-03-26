@@ -22,18 +22,29 @@ provider "proxmox" {
 	insecure	= true # Deshabilita validación de certificados SSL. No recomendado en producción.
 }
 
+##############################################################
+# Recurso: Descarga de la plantilla LXC al datastore         #
+##############################################################
+resource "proxmox_virtual_environment_download_file" "lxc_template" {
+  # content_type especifica el tipo de archivo que se va a descargar. 
+  # En este caso, "vztmpl" indica que es una plantilla de contenedor LXC (Linux Container Template).
+  content_type = "vztmpl"
+  # datastore_id especifica el datastore donde se guardará el archivo descargado.
+  datastore_id = var.CT_template_datastore_id
+  # node_name especifica el nodo Proxmox donde se guardará el archivo descargado.
+  node_name    = var.proxmox_node
+  # url especifica la URL de la plantilla LXC a descargar.
+  url          = "http://download.proxmox.com/images/system/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+}
+
 ###########################################################
-# Recurso: Creación de la VM desde una imagen existente   #
+# Recurso: Creación del contenedor LXC                    #
 ###########################################################
-resource "proxmox_virtual_environment_vm" "backend_node" {
+resource "proxmox_virtual_environment_container" "backend_node" {
 	count		= var.vm_count
 	name		= "${var.vm_name}-${count.index + 1}"
 	node_name	= var.proxmox_node
 	vm_id		= var.vm_id + count.index
-
-	agent {
-		enabled	= var.agent_enabled
-	}
 
 	cpu {
 		cores	= var.cpu_cores
@@ -44,18 +55,22 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 	}
 
 	disk {
-		datastore_id	= "local-lvm"
-		file_id			= var.existing_image_file
-		interface		= "virtio0"
+		datastore_id	= var.CT_disk_datastore_id
 		size			= var.disk_size
 	}
 
 	network_device {
+		name	= "eth0"
 		bridge	= var.network_bridge
 	}
 
+	operating_system {
+		template_file_id	= proxmox_virtual_environment_download_file.lxc_template.id
+		type				= "ubuntu"
+	}
+
 	initialization {
-		user_data_file_id = proxmox_virtual_environment_file.user_data.id
+		hostname	= "${var.vm_name}-${count.index + 1}"
 
 		ip_config {
 			ipv4 {
@@ -63,7 +78,6 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 			}
 		}
 		user_account {
-			username	= var.vm_username
 			password	= var.vm_password
 		}
 	}
@@ -72,5 +86,5 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
 
 output "vm_ipv4_addresses" {
 	description	= "Direcciones IP asignadas a las máquinas virtuales por DHCP"
-	value		= [for vm in proxmox_virtual_environment_vm.backend_node : vm.ipv4_addresses]
+	value       = [for lxc in proxmox_virtual_environment_container.backend_node : lxc.ipv4_addresses]
 }
