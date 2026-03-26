@@ -2,13 +2,14 @@ all: help
 
 help:
 	@echo "Uso del Makefile:"
-	@echo "  make commit m=\"mensaje\"		- Agrega y commitea los cambios con el mensaje indicado."
+	@echo "  make commit m=\"mensaje\"	- Agrega y commitea los cambios con el mensaje indicado."
 	@echo "  make fcommit				- Commitea con mensaje predeterminado (sin prompt)."
-	@echo "  make push				- Commitea (si hay cambios), pregunta mensaje al usuario, y pushea."
-	@echo "  make fpush				- Commitea con mensaje predeterminado y pushea."
-	@echo "  make help				- Muestra esta ayuda."
+	@echo "  make push					- Commitea (si hay cambios), pregunta mensaje al usuario, y pushea."
+	@echo "  make fpush					- Commitea con mensaje predeterminado y pushea."
+	@echo "  make switch				- Permite cambiar de rama de forma interactiva."
+	@echo "  make help					- Muestra esta ayuda."
 
-.PHONY: commit push fcommit push fpush help
+.PHONY: commit push fcommit push fpush switch help
 
 commit:
 	@FORCE="0" bash ./scripts/commit.sh "$(m)"
@@ -21,3 +22,7 @@ push:
 
 fpush:
 	@FORCE="1" bash ./scripts/push.sh
+
+switch:
+	@bash ./scripts/switch.sh
+
