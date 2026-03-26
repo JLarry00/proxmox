@@ -8,7 +8,7 @@ help:
 	@echo "  make fpush				- Commitea con mensaje predeterminado y pushea."
 	@echo "  make help				- Muestra esta ayuda."
 
-.PHONY: commit push fcommit push fpush help
+.PHONY: commit push fcommit push fpush switch help
 
 commit:
 	@FORCE="0" bash ./scripts/commit.sh "$(m)"
@@ -21,3 +21,6 @@ push:
 
 fpush:
 	@FORCE="1" bash ./scripts/push.sh
+
+switch:
+	@bash ./scripts/switch.sh
