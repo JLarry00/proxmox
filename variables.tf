@@ -1,128 +1,151 @@
-####################################
-# Definición de variables globales #
-####################################
+# =============================================================================
+# Proxmox — conexión al hipervisor
+# =============================================================================
 
-# URL de acceso a la API de Proxmox, incluyendo protocolo, IP/host y puerto.
 variable "proxmox_endpoint" {
-  type = string
+  type        = string
+  description = "URL de acceso a la API de Proxmox, incluyendo protocolo, IP/host y puerto."
 }
 
-# Token de acceso a la API de Proxmox. Marcada como sensible para proteger la credencial.
 variable "proxmox_api_token" {
-  type      = string
-  sensitive = true
+  type        = string
+  description = "Token de acceso a la API de Proxmox."
+  sensitive   = true
 }
 
-# Nombre del nodo Proxmox donde se desplegará la VM.
 variable "proxmox_node" {
-  type = string
+  type        = string
+  description = "Nombre del nodo Proxmox donde se desplegará la VM."
 }
 
-# Nombre de la VM a crear.
+# =============================================================================
+# Máquina virtual — identidad y cantidad de instancias
+# =============================================================================
+
 variable "vm_name" {
-  type = string
+  type        = string
+  description = "Prefijo de nombre de las VMs (se añade un sufijo numérico por instancia)."
 }
 
-# ID único para identificar la nueva VM.
 variable "vm_id" {
-  type = number
+  type        = number
+  description = "ID base de la primera VM; las siguientes incrementan según el índice."
 }
 
-# Número de VMs a crear.
 variable "vm_count" {
-  type = number
+  type        = number
+  description = "Número de VMs a crear (reservado / otros flujos; la raíz usa length(ip_addresses) para count)."
 }
 
-# Lista de direcciones IP con máscara (ej. "192.168.1.100/24") para las VMs. El número de VMs se calculará según la cantidad de IPs.
-variable "ip_addresses" {
-  type = list(string)
-}
+# =============================================================================
+# Máquina virtual — red (invitada)
+# =============================================================================
 
-# Puerta de enlace por defecto para las VMs.
-variable "gateway" {
-  type = string
-}
-
-# Lista de servidores DNS a utilizar.
-variable "dns_servers" {
-  type = list(string)
-}
-
-# Tamaño del disco en GB.
-variable "disk_size" {
-  type = number
-}
-
-# Datastore ID donde se almacenarán los discos para máquinas.
-variable "disk_datastore_id" {
-  type = string
-}
-
-# Datastore ID donde se almacenarán los archivos.
-variable "files_datastore_id" {
-  type = string
-}
-
-# Número de núcleos (cores) de CPU.
-variable "cpu_cores" {
-  type = number
-}
-
-# Cantidad de memoria RAM en Megabytes (MB).
-variable "memory_mb" {
-  type = number
-}
-
-# Bridge de red de Proxmox al que se conectará la VM.
 variable "network_bridge" {
-  type = string
+  type        = string
+  description = "Bridge de red de Proxmox para la VM."
 }
 
-# Usuario de acceso a la VM mediante Cloud-Init.
-variable "vm_username" {
-  type = string
+variable "ip_addresses" {
+  type        = list(string)
+  description = "Lista de direcciones IPv4 con máscara (p. ej. 192.168.1.100/24). El count de instancias sigue length(ip_addresses)."
 }
 
-# Contraseña para el usuario anterior. Marcada como sensible.
-variable "vm_password" {
-  type      = string
-  sensitive = true
+variable "gateway" {
+  type        = string
+  description = "Puerta de enlace por defecto para las VMs."
 }
 
-# Habilitar el agente QEMU Guest Agent.
+variable "dns_servers" {
+  type        = list(string)
+  description = "Lista de servidores DNS."
+}
+
+# =============================================================================
+# Máquina virtual — cómputo, firmware y guest agent
+# =============================================================================
+
+variable "cpu_cores" {
+  type        = number
+  description = "Número de cores de CPU."
+}
+
+variable "memory_mb" {
+  type        = number
+  description = "RAM dedicada en megabytes (MB)."
+}
+
+variable "bios" {
+  type        = string
+  description = "Tipo de BIOS de la VM."
+}
+
 variable "agent_enabled" {
-  type = bool
+  type        = bool
+  description = "Habilitar el QEMU Guest Agent."
 }
 
-################################################
-# Variables exclusivas para clonar desde molde #
-################################################
+# =============================================================================
+# Máquina virtual — almacenamiento e imagen de disco
+# =============================================================================
 
-# ID de la VM plantilla/original desde la que se hará el clon.
-variable "template_vm_id" {
-  type = number
+variable "disk_datastore_id" {
+  type        = string
+  description = "Datastore donde se almacenan los discos de las VMs."
 }
 
-###############################################
-# Variables exclusivas para imagen descargada #
-###############################################
-
-# URL desde donde se descargará la imagen cloud-init a utilizar como base.
-variable "cloud_image_url" {
-  type = string
+variable "files_datastore_id" {
+  type        = string
+  description = "Datastore para archivos auxiliares."
 }
 
-# Checksum de la imagen para validar integridad.
-variable "cloud_image_checksum" {
-  type = string
+variable "disk_interface" {
+  type        = string
+  description = "Interfaz del disco (virtio, scsi, etc.)."
 }
 
-##########################################
-# Variables exclusivas para imagen local #
-##########################################
+variable "disk_size" {
+  type        = number
+  description = "Tamaño del disco en GB."
+}
 
-# Archivo de imagen existente en Proxmox a utilizar como base para la VM.
 variable "existing_image_file" {
   type        = string
-  description = "Ruta a la imagen en el sistema de archivos de Proxmox. Formato requerido: <nombre_datastore>:iso/<nombre_archivo_con_extension>"
+  description = "Ruta a la imagen en el sistema de archivos de Proxmox. Formato: <datastore>:iso/<archivo>"
+}
+
+# =============================================================================
+# Máquina virtual — acceso inicial (cloud-init)
+# =============================================================================
+
+variable "vm_username" {
+  type        = string
+  description = "Usuario inicial en la VM (cloud-init)."
+}
+
+variable "vm_password" {
+  type        = string
+  description = "Contraseña del usuario inicial."
+  sensitive   = true
+}
+
+# =============================================================================
+# Otros flujos del repositorio (clon / imagen descargada)
+# =============================================================================
+# Las siguientes variables no las usa obligatoriamente el main.tf de la raíz;
+# sirven para módulos o carpetas alternativas (p. ej. clone_vm, dwnld_image).
+
+variable "template_vm_id" {
+  type        = number
+  description = "ID de la VM plantilla para flujos de clonado."
+}
+
+variable "cloud_image_url" {
+  type        = string
+  description = "URL de la imagen cloud-init base (descarga)."
+}
+
+variable "cloud_image_checksum" {
+  type        = string
+  description = "Checksum de la imagen para validación (descarga)."
 }
