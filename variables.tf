@@ -13,9 +13,25 @@ variable "proxmox_api_token" {
   sensitive   = true
 }
 
+variable "proxmox_ssh_password" {
+  type        = string
+  description = "Contraseña SSH del usuario root del nodo Proxmox."
+  sensitive   = true
+}
+
 variable "proxmox_node" {
   type        = string
   description = "Nombre del nodo Proxmox donde se desplegará la VM."
+}
+
+variable "proxmox_node_address" {
+  type        = string
+  description = "Dirección IP del nodo Proxmox."
+}
+
+variable "proxmox_node_port" {
+  type        = number
+  description = "Puerto del nodo Proxmox."
 }
 
 # =============================================================================

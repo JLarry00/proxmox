@@ -1,19 +1,11 @@
 # VMs
 resource "proxmox_virtual_environment_vm" "backend_node" {
-  started = false
-  on_boot = false
-
   count     = length(var.ip_addresses)
   name      = "${var.existing_image_file}-${count.index + 1}"
   node_name = var.proxmox_node
   vm_id     = var.vm_id + count.index
 
   bios = var.bios
-  # efi_disk {
-  #   datastore_id = var.disk_datastore_id
-  #   file_format  = "raw"
-  #   type         = "4m"
-  # }
 
   agent {
     enabled = var.agent_enabled
@@ -59,33 +51,6 @@ resource "proxmox_virtual_environment_vm" "backend_node" {
       }
     }
   }
-
-  # initialization {
-  #   # --- Aprovisionamiento Personalizado (Desactivado por ahora) ---
-  #   # Descomentar la siguiente línea para inyectar configuraciones avanzadas 
-  #   # (ej. instalación de Jenkins/Java) definidas en cloud_init.tf y user-data.tftpl.
-  #   # Al estar comentada, la VM arranca limpia, aplicando solo IP y credenciales básicas.
-  #   # user_data_file_id = proxmox_virtual_environment_file.user_data.id
-
-  #   datastore_id = var.disk_datastore_id
-
-  #   dns {
-  #     servers = var.dns_servers
-  #   }
-
-  #   ip_config {
-  #     ipv4 {
-  #       address = var.ip_addresses[count.index]
-  #       gateway = var.gateway
-  #     }
-  #   }
-
-  #   user_account {
-  #     username = var.vm_username
-  #     password = var.vm_password
-  #     keys     = []  # ← permite login por contraseña
-  #   }
-  # }
 }
 
 # =======================================================================================
@@ -98,18 +63,11 @@ resource "proxmox_virtual_environment_file" "user_data" {
   node_name    = var.proxmox_node
 
   source_raw {
-    data = <<EOF
-#cloud-config
-hostname: ${var.vm_name}-${count.index + 1}
-users:
-  - name: ${var.vm_username}
-    groups: sudo
-    shell: /bin/bash
-    lock_passwd: false
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    passwd: ${bcrypt(var.vm_password)}
-ssh_pwauth: true
-EOF
+    data = templatefile("${path.module}/user-data.tftpl", {
+      vm_name     = "${var.vm_name}-${count.index + 1}"
+      vm_username = var.vm_username
+      vm_password = var.vm_password
+    })
     file_name = "user-data-${var.vm_name}-${count.index + 1}.yaml"
   }
 }
