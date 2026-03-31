@@ -1,7 +1,7 @@
 provider "proxmox" {
-  endpoint  = var.proxmox_endpoint
-  api_token = var.proxmox_api_token
-  insecure  = true
+  # endpoint y api_token los lee el provider directamente de:
+  #   PROXMOX_VE_ENDPOINT y PROXMOX_VE_API_TOKEN (variables de entorno)
+  insecure = true
 
   ssh {
     agent    = false

@@ -20,14 +20,14 @@ proxmox/
 │   ├── variables.tf
 │   ├── outputs.tf
 │   ├── dev.tfvars                # Valores dev  (NO en git — contiene credenciales)
-│   └── prod.tfvars               # Valores prod (NO en git — contiene credenciales)
+│   └── pro.tfvars               # Valores prod (NO en git — contiene credenciales)
 │
 ├── packer/
 │   └── ubuntu-24-04/             # Construye una VM template en Proxmox (independiente)
 │
 ├── scripts/
 │   ├── env-dev.sh                # Carga credenciales del entorno dev como variables de entorno (NO en git)
-│   ├── env-prod.sh               # Carga credenciales del entorno prod (NO en git)
+│   ├── env-pro.sh               # Carga credenciales del entorno pro (NO en git)
 │   ├── commit.sh                 # Automatización de commits
 │   ├── push.sh                   # Automatización de push
 │   └── switch.sh                 # Cambio de rama git
@@ -53,7 +53,7 @@ proxmox/
 
 ### 1. Configurar credenciales
 
-Los scripts `env-dev.sh` y `env-prod.sh` cargan las credenciales como variables de entorno. El provider `bpg/proxmox` las lee automáticamente.
+Los scripts `env-dev.sh` y `env-pro.sh` cargan las credenciales como variables de entorno. El provider `bpg/proxmox` las lee automáticamente.
 
 Edita `scripts/env-dev.sh` con tus datos y luego ejecuta:
 
@@ -193,10 +193,10 @@ El resultado es una VM template en Proxmox con el ID `template_vm_id` (por defec
 
 | Comando | Descripción |
 |---|---|
-| `make init [ENV=dev\|prod]` | `terraform init` en el entorno |
-| `make plan [ENV=dev\|prod]` | `terraform plan` |
-| `make apply [ENV=dev\|prod]` | `terraform apply` |
-| `make destroy [ENV=dev\|prod]` | `terraform destroy` |
+| `make init [ENV=dev\|pro]` | `terraform init` en el entorno |
+| `make plan [ENV=dev\|pro]` | `terraform plan` |
+| `make apply [ENV=dev\|pro]` | `terraform apply` |
+| `make destroy [ENV=dev\|pro]` | `terraform destroy` |
 | `make fmt` | Formatea todos los archivos `.tf` recursivamente |
 | `make commit m="mensaje"` | `git add` + commit con mensaje |
 | `make push` | Commit + push |

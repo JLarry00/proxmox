@@ -2,17 +2,6 @@
 # Proxmox — conexión
 # =============================================================================
 
-variable "proxmox_endpoint" {
-  type        = string
-  description = "URL de acceso a la API de Proxmox."
-}
-
-variable "proxmox_api_token" {
-  type        = string
-  description = "Token de acceso a la API de Proxmox."
-  sensitive   = true
-}
-
 variable "proxmox_ssh_password" {
   type        = string
   description = "Contraseña SSH del usuario root del nodo Proxmox."

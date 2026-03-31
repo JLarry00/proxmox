@@ -41,4 +41,7 @@ terraform.rc
 
 # Scripts de credenciales por entorno (contienen secrets)
 scripts/env-dev.sh
-scripts/env-prod.sh
+scripts/env-pro.sh
+
+# Entorno activo seleccionado con make usedev / usepro
+.terraform-env

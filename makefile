@@ -1,42 +1,230 @@
-ENV ?= dev
+-include .terraform-env
+ENV        ?= dev
+DEPLOY_DIR  = deploy
+SHELL      := /bin/bash
+# Entornos validos: dev, pro
 
-DEPLOY_DIR = deploy
-TFVARS     = $(DEPLOY_DIR)/$(ENV).tfvars
+# Colores
+_Y  = \033[1;33m
+_R  = \033[1;31m
+_G  = \033[1;32m
+_B  = \033[1;34m
+_X  = \033[0m
+_RB = \033[1;41;97m
+
+# Recuadro PRO (49 chars por linea, sin acentos para alineacion exacta)
+# "   !! ATENCION - ENTORNO DE PRODUCCION: PRO !!   " = 3+43+3 = 49
+define _pro_box
+	printf "\n$(_RB)                                                 $(_X)\n"; \
+	printf   "$(_RB)   !! ATENCION - ENTORNO DE PRODUCCION: PRO !!   $(_X)\n"; \
+	printf   "$(_RB)                                                 $(_X)\n\n"
+endef
+
+# Recordatorio de entorno al final de init/plan
+define _env_reminder
+	if [ "$(ENV)" = "pro" ]; then \
+		printf "\n$(_RB)   Entorno activo : PRO   $(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno activo : $(ENV)$(_X)\n\n"; \
+	fi
+endef
 
 all: help
 
 help:
-	@echo ""
-	@echo "Uso del Makefile:"
-	@echo "  make init    [ENV=dev|prod]   - terraform init"
-	@echo "  make plan    [ENV=dev|prod]   - terraform plan"
-	@echo "  make apply   [ENV=dev|prod]   - terraform apply"
-	@echo "  make destroy [ENV=dev|prod]   - terraform destroy"
-	@echo "  make fmt                      - formatea todos los archivos .tf"
-	@echo "  make commit  m=\"mensaje\"      - git add + commit"
-	@echo "  make push                     - commit + push"
-	@echo "  make switch                   - cambiar de rama git"
-	@echo ""
-	@echo "  Entorno activo : $(ENV)"
-	@echo "  Vars file      : $(TFVARS)"
-	@echo ""
+	@printf "\n"
+	@printf "$(_B)-- Seleccion de entorno -----------------------------------------$(_X)\n"
+	@printf "  make use-dev               Activa entorno dev\n"
+	@printf "  make use-pro               Activa entorno pro\n"
+	@printf "\n"
+	@printf "$(_B)-- Terraform (entorno activo: "
+	@if [ "$(ENV)" = "pro" ]; then printf "$(_RB) PRO $(_X)"; else printf "$(_Y)$(ENV)$(_X)"; fi
+	@printf "$(_B)) ----------------------------$(_X)\n"
+	@printf "  make init                  terraform init  (independiente del entorno)\n"
+	@printf "  make plan                  terraform plan  (sin confirmacion en dev)\n"
+	@printf "  make apply                 terraform apply (pide confirmacion siempre)\n"
+	@printf "  make destroy               terraform destroy (pide confirmacion siempre)\n"
+	@printf "\n"
+	@printf "$(_B)-- Atajos por entorno -------------------------------------------$(_X)\n"
+	@printf "  make plan-dev / plan-pro\n"
+	@printf "  make apply-dev / apply-pro\n"
+	@printf "  make destroy-dev / destroy-pro\n"
+	@printf "\n"
+	@printf "$(_B)-- Sin confirmacion: force (solo dev) ---------------------------$(_X)\n"
+	@printf "  make fapply / fdestroy          (entorno activo, bloqueado si es pro)\n"
+	@printf "  make fapply-dev / fdestroy-dev\n"
+	@printf "\n"
+	@printf "$(_B)-- Git ----------------------------------------------------------$(_X)\n"
+	@printf "  make commit m=\"mensaje\"    git add + commit\n"
+	@printf "  make push                  commit + push\n"
+	@printf "  make switch                cambiar de rama\n"
+	@printf "\n"
 
-.PHONY: init plan apply destroy fmt commit fcommit push fpush switch help
+.PHONY: use-dev use-pro init plan apply destroy \
+        plan-dev plan-pro apply-dev apply-pro destroy-dev destroy-pro \
+        fapply fdestroy fapply-dev fdestroy-dev \
+        fmt commit fcommit push fpush switch help
+
+# ── Seleccion de entorno ───────────────────────────────────────────
+
+use-dev:
+	@echo "ENV=dev" > .terraform-env
+	@printf "  Entorno activo: $(_Y)dev$(_X) — recuerda: source scripts/env-dev.sh\n"
+
+use-pro:
+	@echo "ENV=pro" > .terraform-env
+	@printf "  Entorno activo: $(_RB) PRO $(_X) — recuerda: source scripts/env-pro.sh\n"
+
+# ── init (sin entorno, muestra recordatorio al final) ─────────────
 
 init:
-	cd $(DEPLOY_DIR) && terraform init
+	@source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform init
+	@$(call _env_reminder)
+
+# ── plan ──────────────────────────────────────────────────────────
 
 plan:
-	cd $(DEPLOY_DIR) && terraform plan -var-file=$(ENV).tfvars
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : plan$(_X)\n\n"; \
+		read -p "  Confirmar? [y/N] " _ans; \
+		[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	fi; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform plan -var-file=$(ENV).tfvars; \
+		$(call _env_reminder); \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+plan-dev:
+	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform plan -var-file=dev.tfvars
+	@printf "\n$(_Y)  Entorno activo : dev$(_X)\n\n"
+
+plan-pro:
+	@_ok=yes; \
+	$(call _pro_box); \
+	printf "  $(_R)Accion  : plan$(_X)\n\n"; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform plan -var-file=pro.tfvars; \
+		printf "\n$(_RB)   Entorno activo : PRO   $(_X)\n\n"; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+# ── apply ─────────────────────────────────────────────────────────
 
 apply:
-	cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : apply$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : apply\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+apply-dev:
+	@_ok=yes; \
+	printf "\n$(_Y)  Entorno : dev$(_X)\n  Accion  : apply\n\n"; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+apply-pro:
+	@_ok=yes; \
+	$(call _pro_box); \
+	printf "  $(_R)Accion  : apply$(_X)\n\n"; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=pro.tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+# ── destroy ───────────────────────────────────────────────────────
 
 destroy:
-	cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : destroy$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : destroy\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+destroy-dev:
+	@_ok=yes; \
+	printf "\n$(_Y)  Entorno : dev$(_X)\n  Accion  : destroy\n\n"; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+destroy-pro:
+	@_ok=yes; \
+	$(call _pro_box); \
+	printf "  $(_R)Accion  : destroy$(_X)\n\n"; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=pro.tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+# ── Force: sin confirmacion (solo dev) ────────────────────────────
+
+fapply:
+	@if [ "$(ENV)" = "pro" ]; then \
+		printf "\n$(_R)  Force no permitido en pro.$(_X) Usa: make apply-pro\n\n"; \
+	else \
+		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+	fi
+
+fdestroy:
+	@if [ "$(ENV)" = "pro" ]; then \
+		printf "\n$(_R)  Force no permitido en pro.$(_X) Usa: make destroy-pro\n\n"; \
+	else \
+		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+	fi
+
+fapply-dev:
+	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars
+
+fdestroy-dev:
+	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars
+
+# ── Formato ────────────────────────────────────────────────────────
 
 fmt:
 	terraform fmt -recursive
+
+# ── Git ────────────────────────────────────────────────────────────
 
 commit:
 	@FORCE="0" bash ./scripts/commit.sh "$(m)"
