@@ -38,3 +38,7 @@ terraform.rc
 
 # Ignore environment variables files
 *.env
+
+# Scripts de credenciales por entorno (contienen secrets)
+scripts/env-dev.sh
+scripts/env-prod.sh

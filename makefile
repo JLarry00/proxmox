@@ -1,14 +1,42 @@
+ENV ?= dev
+
+DEPLOY_DIR = deploy
+TFVARS     = $(DEPLOY_DIR)/$(ENV).tfvars
+
 all: help
 
 help:
+	@echo ""
 	@echo "Uso del Makefile:"
-	@echo "  make commit m=\"mensaje\"		- Agrega y commitea los cambios con el mensaje indicado."
-	@echo "  make fcommit				- Commitea con mensaje predeterminado (sin prompt)."
-	@echo "  make push				- Commitea (si hay cambios), pregunta mensaje al usuario, y pushea."
-	@echo "  make fpush				- Commitea con mensaje predeterminado y pushea."
-	@echo "  make help				- Muestra esta ayuda."
+	@echo "  make init    [ENV=dev|prod]   - terraform init"
+	@echo "  make plan    [ENV=dev|prod]   - terraform plan"
+	@echo "  make apply   [ENV=dev|prod]   - terraform apply"
+	@echo "  make destroy [ENV=dev|prod]   - terraform destroy"
+	@echo "  make fmt                      - formatea todos los archivos .tf"
+	@echo "  make commit  m=\"mensaje\"      - git add + commit"
+	@echo "  make push                     - commit + push"
+	@echo "  make switch                   - cambiar de rama git"
+	@echo ""
+	@echo "  Entorno activo : $(ENV)"
+	@echo "  Vars file      : $(TFVARS)"
+	@echo ""
 
-.PHONY: commit push fcommit push fpush switch help
+.PHONY: init plan apply destroy fmt commit fcommit push fpush switch help
+
+init:
+	cd $(DEPLOY_DIR) && terraform init
+
+plan:
+	cd $(DEPLOY_DIR) && terraform plan -var-file=$(ENV).tfvars
+
+apply:
+	cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars
+
+destroy:
+	cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars
+
+fmt:
+	terraform fmt -recursive
 
 commit:
 	@FORCE="0" bash ./scripts/commit.sh "$(m)"

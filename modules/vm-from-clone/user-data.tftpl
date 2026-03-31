@@ -1,0 +1,23 @@
+#cloud-config
+hostname: ${vm_name}
+users:
+  - default
+  - name: ${vm_username}
+    no_user_group: true
+    primary_group: users
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+chpasswd:
+  expire: false
+  users:
+    - name: ${vm_username}
+      password: ${vm_password}
+      type: text
+ssh_pwauth: true
+packages:
+  - qemu-guest-agent
+runcmd:
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent

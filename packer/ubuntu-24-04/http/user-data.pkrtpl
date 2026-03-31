@@ -1,0 +1,18 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: es
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: direct
+  identity:
+    hostname: ubuntu-template
+    username: ${user}
+    password: "${pass_hash}"
+  packages:
+    - qemu-guest-agent
