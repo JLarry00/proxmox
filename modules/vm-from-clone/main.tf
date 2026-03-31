@@ -1,7 +1,5 @@
 resource "proxmox_virtual_environment_vm" "vm" {
   for_each  = var.vms
-  started   = true
-  on_boot   = false
 
   name      = each.key
   node_name = var.proxmox_node
