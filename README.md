@@ -46,6 +46,7 @@ proxmox/
   - API Token con permisos de VM, almacenamiento y red
   - Acceso SSH al nodo como `root` (requerido por el provider `bpg/proxmox`)
   - Imagen `.img` subida al datastore si se usa `vm-from-image`
+  - VM template en el nodo si se usa `vm-from-clone`
 
 ---
 
