@@ -1,7 +1,9 @@
 -include .terraform-env
-ENV        ?= dev
-DEPLOY_DIR  = deploy
-SHELL      := /bin/bash
+ENV           ?= dev
+DEPLOY_DIR     = deploy
+IMAGES_DIR     = images
+TEMPLATES_DIR  = templates
+SHELL         := /bin/bash
 # Entornos validos: dev, pro
 
 # Colores
@@ -54,6 +56,16 @@ help:
 	@printf "  make fapply / fdestroy          (entorno activo, bloqueado si es pro)\n"
 	@printf "  make fapply-dev / fdestroy-dev\n"
 	@printf "\n"
+	@printf "$(_B)-- Capa images/ ------------------------------------------------$(_X)\n"
+	@printf "  make init-images           terraform init en images/\n"
+	@printf "  make download-images       descarga imágenes (apply en images/)\n"
+	@printf "  make destroy-images        elimina imágenes del estado de Proxmox\n"
+	@printf "\n"
+	@printf "$(_B)-- Capa templates/ ---------------------------------------------$(_X)\n"
+	@printf "  make init-templates        terraform init en templates/\n"
+	@printf "  make build-templates       crea plantillas VM (apply en templates/)\n"
+	@printf "  make destroy-templates     elimina plantillas del estado de Proxmox\n"
+	@printf "\n"
 	@printf "$(_B)-- Git ----------------------------------------------------------$(_X)\n"
 	@printf "  make commit m=\"mensaje\"    git add + commit\n"
 	@printf "  make push                  commit + push\n"
@@ -63,6 +75,8 @@ help:
 .PHONY: use-dev use-pro init plan apply destroy \
         plan-dev plan-pro apply-dev apply-pro destroy-dev destroy-pro \
         fapply fdestroy fapply-dev fdestroy-dev \
+        init-images download-images destroy-images \
+        init-templates build-templates destroy-templates \
         fmt commit fcommit push fpush switch help
 
 # ── Seleccion de entorno ───────────────────────────────────────────
@@ -218,6 +232,82 @@ fapply-dev:
 
 fdestroy-dev:
 	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars
+
+# ── images/ ────────────────────────────────────────────────────────
+
+init-images:
+	@source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform init
+	@$(call _env_reminder)
+
+download-images:
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : download-images$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : download-images\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+destroy-images:
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : destroy-images$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : destroy-images\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+# ── templates/ ─────────────────────────────────────────────────────
+
+init-templates:
+	@source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform init
+	@$(call _env_reminder)
+
+build-templates:
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : build-templates$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : build-templates\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
+
+destroy-templates:
+	@_ok=yes; \
+	if [ "$(ENV)" = "pro" ]; then \
+		$(call _pro_box); \
+		printf "  $(_R)Accion  : destroy-templates$(_X)\n\n"; \
+	else \
+		printf "\n$(_Y)  Entorno : $(ENV)$(_X)\n  Accion  : destroy-templates\n\n"; \
+	fi; \
+	read -p "  Confirmar? [y/N] " _ans; \
+	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
+	if [ "$$_ok" = "yes" ]; then \
+		source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+	else \
+		printf "  Cancelado.\n\n"; \
+	fi
 
 # ── Formato ────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# Proxmox — conexión
+# Proxmox — conexión (inyectadas via env-*.sh como variables de entorno)
 # =============================================================================
 
 variable "proxmox_ssh_password" {
@@ -18,19 +18,19 @@ variable "proxmox_node" {
 # =============================================================================
 
 variable "vms_from_image" {
-  description = "VMs a desplegar desde imagen .img local."
+  description = "VMs a desplegar desde imagen. image_id es el nombre corto definido en deploy/locals.tf."
   type = map(object({
     ip        = string
     cpu_cores = number
     memory_mb = number
     disk_size = number
-    os_image  = string
+    image_id  = string
   }))
   default = {}
 }
 
 variable "vms_from_clone" {
-  description = "VMs a desplegar clonando una VM template."
+  description = "VMs a desplegar clonando la plantilla indicada en template_name."
   type = map(object({
     ip        = string
     cpu_cores = number
@@ -39,17 +39,14 @@ variable "vms_from_clone" {
   default = {}
 }
 
-variable "vms_from_download" {
-  description = "VMs a desplegar descargando la imagen desde internet."
-  type = map(object({
-    ip             = string
-    cpu_cores      = number
-    memory_mb      = number
-    disk_size      = number
-    image_url      = string
-    image_checksum = string
-  }))
-  default = {}
+# =============================================================================
+# Resolución de plantilla para clonado
+# =============================================================================
+
+variable "template_name" {
+  type        = string
+  description = "Nombre corto de la plantilla a clonar (clave en templates/). Obligatorio si vms_from_clone no está vacío."
+  default     = ""
 }
 
 # =============================================================================
@@ -64,18 +61,6 @@ variable "vm_id_base" {
 variable "gateway" {
   type        = string
   description = "Puerta de enlace por defecto."
-}
-
-variable "dns_servers" {
-  type        = list(string)
-  description = "Lista de servidores DNS."
-  default     = []
-}
-
-variable "template_vm_id" {
-  type        = number
-  description = "ID de la VM template para flujos de clonado."
-  default     = 0
 }
 
 # =============================================================================

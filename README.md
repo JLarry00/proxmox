@@ -1,219 +1,192 @@
-# Proxmox Terraform Deployments
+# proxmox-terraform
 
-Infraestructura como código (IaC) con **Terraform** y **Packer** para desplegar máquinas virtuales en **Proxmox VE**.
+Infraestructura como código para desplegar VMs en Proxmox VE con Terraform.  
+Organizado en tres capas independientes con estados separados y comunicación explícita entre ellas.
 
 ---
 
-## Estructura del proyecto
+## Arquitectura general
 
 ```
 proxmox/
-├── modules/                      # Bloques reutilizables (sin credenciales)
-│   ├── vm-from-image/            # Despliegue desde imagen .img local en Proxmox
-│   ├── vm-from-clone/            # Clon de una VM template existente en Proxmox
-│   └── vm-from-download/         # Descarga la imagen desde internet y despliega
-│
-├── deploy/                       # Un único conjunto de .tf — selecciona entorno con -var-file
-│   ├── main.tf                   # Llama a los módulos
-│   ├── providers.tf
-│   ├── versions.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── dev.tfvars                # Valores dev  (NO en git — contiene credenciales)
-│   └── pro.tfvars               # Valores prod (NO en git — contiene credenciales)
-│
-├── packer/
-│   └── ubuntu-24-04/             # Construye una VM template en Proxmox (independiente)
-│
-├── scripts/
-│   ├── env-dev.sh                # Carga credenciales del entorno dev como variables de entorno (NO en git)
-│   ├── env-pro.sh               # Carga credenciales del entorno pro (NO en git)
-│   ├── commit.sh                 # Automatización de commits
-│   ├── push.sh                   # Automatización de push
-│   └── switch.sh                 # Cambio de rama git
-│
-├── OLD/                          # Backups de código anterior (solo referencia)
-└── makefile                      # Comandos abreviados por entorno
+├── images/        ← Capa 1: descarga imágenes de disco en Proxmox
+├── templates/     ← Capa 2: crea VM plantillas a partir de imágenes
+├── deploy/        ← Capa 3: despliega VMs activas (dev / pro)
+├── modules/       ← Módulos reutilizables (instanciados por deploy/)
+│   ├── vm-from-image/
+│   └── vm-from-clone/
+└── scripts/       ← Scripts de entorno y utilidades Git
 ```
 
+### Por qué tres capas
+
+Cada capa tiene un ciclo de vida distinto:
+
+| Capa        | ¿Con qué frecuencia cambia? | Destruirla accidentalmente sería... |
+|-------------|----------------------------|--------------------------------------|
+| `images/`   | Raramente                  | Perder las imágenes descargadas      |
+| `templates/`| Raramente                  | Invalidar todos los clones futuros   |
+| `deploy/`   | Con frecuencia             | Destruir solo las VMs activas        |
+
+Al tener estados separados, un `make destroy` en `deploy/` **nunca** afecta a las imágenes ni a las plantillas.
+
 ---
 
-## Requisitos previos
+## Flujo de trabajo completo
 
-- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.3
-- [Packer](https://developer.hashicorp.com/packer/install) >= 1.9 (solo para construir templates)
-- Acceso a un nodo Proxmox VE con:
-  - API Token con permisos de VM, almacenamiento y red
-  - Acceso SSH al nodo como `root` (requerido por el provider `bpg/proxmox`)
-  - Imagen `.img` subida al datastore si se usa `vm-from-image`
-  - VM template en el nodo si se usa `vm-from-clone`
-
----
-
-## Flujo de trabajo
-
-### 1. Configurar credenciales
-
-Los scripts `env-dev.sh` y `env-pro.sh` cargan las credenciales como variables de entorno. El provider `bpg/proxmox` las lee automáticamente.
-
-Edita `scripts/env-dev.sh` con tus datos y luego ejecuta:
+### 1. Primera vez: preparar entorno
 
 ```bash
+# Copia y edita los scripts de credenciales (están en .gitignore)
+cp scripts/env-dev.sh.example scripts/env-dev.sh
+# Edita scripts/env-dev.sh con tu endpoint, API token, etc.
 source scripts/env-dev.sh
 ```
 
-Variables que exporta:
+### 2. (Opcional) Descargar imágenes
 
-| Variable de entorno | Descripción |
-|---|---|
-| `PROXMOX_VE_ENDPOINT` | URL del nodo Proxmox (`https://IP:8006/`) |
-| `PROXMOX_VE_API_TOKEN` | Token de API (`usuario@pve!token=xxx`) |
-| `TF_VAR_proxmox_ssh_password` | Contraseña SSH del root del nodo |
-| `TF_VAR_proxmox_node` | Nombre del nodo Proxmox |
+Solo necesario si quieres usar imágenes descargadas desde internet.  
+Las imágenes **estáticas** (ya en Proxmox) se declaran directamente en `deploy/locals.tf`.
 
-> Estos archivos están en `.gitignore` y nunca se suben al repositorio.
+```bash
+# Edita images/dev.tfvars: añade entradas al mapa `images`
+make init-images
+make download-images
+```
+
+### 3. (Opcional) Crear plantillas
+
+Solo necesario si vas a usar `vms_from_clone`.
+
+```bash
+# Edita templates/dev.tfvars: añade entradas al mapa `templates`
+make init-templates
+make build-templates
+```
+
+### 4. Desplegar VMs
+
+```bash
+# Edita deploy/dev.tfvars: configura vms_from_image y/o vms_from_clone
+make use-dev     # Establece entorno activo
+make init        # Inicializa deploy/ (solo la primera vez o tras cambios de provider)
+make plan        # Previsualiza cambios
+make apply       # Aplica
+```
+
+### 5. Destruir VMs
+
+```bash
+make destroy     # Solo destruye las VMs de deploy/
+                 # Las imágenes y plantillas permanecen intactas
+```
 
 ---
 
-### 2. Configurar las VMs a desplegar
+## Comandos `make` disponibles
 
-Edita `deploy/dev.tfvars`. Las VMs se definen en mapas por método de despliegue:
+```bash
+make help        # Lista todos los comandos disponibles
+```
+
+### Selección de entorno
+
+```bash
+make use-dev     # Activa entorno dev (se guarda en .terraform-env)
+make use-pro     # Activa entorno pro
+```
+
+### Capa deploy/
+
+```bash
+make init        # terraform init en deploy/
+make plan        # terraform plan (sin confirmación en dev)
+make apply       # terraform apply (pide confirmación siempre)
+make destroy     # terraform destroy (pide confirmación siempre)
+
+# Atajos por entorno:
+make plan-dev / plan-pro
+make apply-dev / apply-pro
+make destroy-dev / destroy-pro
+
+# Sin confirmación (solo dev):
+make fapply / fdestroy
+make fapply-dev / fdestroy-dev
+```
+
+### Capa images/
+
+```bash
+make init-images
+make download-images
+make destroy-images
+```
+
+### Capa templates/
+
+```bash
+make init-templates
+make build-templates
+make destroy-templates
+```
+
+---
+
+## Catálogo de imágenes
+
+`deploy/locals.tf` define `static_images`: imágenes ya presentes en Proxmox que **no** necesitan descargarse.  
+Las imágenes descargadas por `images/` se fusionan automáticamente con este catálogo.
+
+En `deploy/dev.tfvars`, usa el nombre corto del catálogo como `image_id`:
 
 ```hcl
-# VMs desplegadas desde una imagen .img ya subida a Proxmox
 vms_from_image = {
-  "backend-1" = {
-    ip        = "172.16.20.50/24"
+  "mi-vm" = {
+    ip        = "192.168.13.50/24"
     cpu_cores = 2
     memory_mb = 4096
     disk_size = 32
-    os_image  = "ubuntu-24-04-server-cloudimg-amd64"  # nombre sin .img
-  }
-  "jenkins" = {
-    ip        = "172.16.20.51/24"
-    cpu_cores = 4
-    memory_mb = 8192
-    disk_size = 50
-    os_image  = "ubuntu-24-04-server-cloudimg-amd64"
+    image_id  = "ubuntu-24-04"   # nombre corto del catálogo
   }
 }
-
-# Para no usar un método, dejar el mapa vacío:
-vms_from_clone    = {}
-vms_from_download = {}
-```
-
-Cada clave del mapa es el **nombre de la VM** en Proxmox. Los IDs de VM se asignan automáticamente a partir de `vm_id_base`.
-
----
-
-### 3. Desplegar con make
-
-```bash
-# Inicializar (solo la primera vez o al añadir providers)
-make init ENV=dev
-
-# Ver el plan de cambios
-make plan ENV=dev
-
-# Aplicar
-make apply ENV=dev
-
-# Destruir todo
-make destroy ENV=dev
-```
-
-Sin especificar `ENV`, el valor por defecto es `dev`.
-
----
-
-### 4. Desplegar directamente con Terraform
-
-```bash
-source scripts/env-dev.sh
-cd deploy
-terraform init
-terraform plan -var-file=dev.tfvars
-terraform apply -var-file=dev.tfvars
 ```
 
 ---
 
-## Métodos de despliegue
+## Credenciales
 
-### `vm-from-image` — Imagen local
+Las credenciales **nunca** van en los `.tfvars`. Se inyectan como variables de entorno desde `scripts/env-dev.sh` / `scripts/env-pro.sh` (ignorados por git).
 
-Requiere que la imagen `.img` esté **ya subida** al datastore `local` de Proxmox (en `local:iso/`).
+| Variable de entorno       | Descripción |
+|---------------------------|-------------|
+| `PROXMOX_VE_ENDPOINT`     | URL de la API de Proxmox (`https://host:8006`) |
+| `PROXMOX_VE_API_TOKEN`    | Token de API (`user@realm!token=secret`) |
+| `TF_VAR_proxmox_ssh_password` | Contraseña SSH del nodo (para uploads via SSH) |
+| `TF_VAR_proxmox_node`     | Nombre del nodo Proxmox (`proxmoxdev01`) |
 
-Para subir una imagen manualmente:
-```bash
-# Desde la máquina local
-scp ubuntu-24-04-server-cloudimg-amd64.img root@PROXMOX_IP:/var/lib/vz/template/iso/
+---
+
+## READMEs por capa
+
+- [images/README.md](images/README.md)
+- [templates/README.md](templates/README.md)
+- [deploy/README.md](deploy/README.md)
+- [modules/README.md](modules/README.md)
+  - [modules/vm-from-image/README.md](modules/vm-from-image/README.md)
+  - [modules/vm-from-clone/README.md](modules/vm-from-clone/README.md)
+
+---
+
+## Estado Terraform
+
+Cada capa tiene su propio `terraform.tfstate` local:
+
+```
+images/terraform.tfstate
+templates/terraform.tfstate
+deploy/terraform.tfstate
 ```
 
-O desde la UI de Proxmox: `Datacenter > Storage > local > ISO Images > Upload`.
+`templates/` y `deploy/` leen el estado de las capas inferiores via `terraform_remote_state` con `try()` para degradar graciosamente si la capa inferior aún no existe.
 
-### `vm-from-clone` — Clon de template
-
-Requiere que exista una VM template en Proxmox con el ID especificado en `template_vm_id`. Puede construirse con Packer (ver sección siguiente).
-
-### `vm-from-download` — Descarga automática
-
-Terraform descarga la imagen directamente desde la URL indicada en cada VM y la sube al datastore de Proxmox antes de crear la VM. Más lento pero completamente automatizado.
-
----
-
-## Packer — Construir templates
-
-Packer es **independiente de Terraform**. Construye una VM template en Proxmox que luego Terraform puede clonar con `vm-from-clone`.
-
-```bash
-cd packer/ubuntu-24-04
-
-# Inicializar plugins
-packer init ubuntu.pkr.hcl
-
-# Construir la template (requiere credenciales como variables)
-packer build \
-  -var "proxmox_token=TU_TOKEN" \
-  -var "packer_password_plain=TU_PASS" \
-  -var "packer_password_hash=\$(openssl passwd -6 TU_PASS)" \
-  ubuntu.pkr.hcl
-```
-
-O usando un archivo de variables:
-```bash
-packer build -var-file=secrets.pkrvars.hcl ubuntu.pkr.hcl
-```
-
-El resultado es una VM template en Proxmox con el ID `template_vm_id` (por defecto `400`) que Terraform puede clonar.
-
----
-
-## Makefile — referencia de comandos
-
-| Comando | Descripción |
-|---|---|
-| `make init [ENV=dev\|pro]` | `terraform init` en el entorno |
-| `make plan [ENV=dev\|pro]` | `terraform plan` |
-| `make apply [ENV=dev\|pro]` | `terraform apply` |
-| `make destroy [ENV=dev\|pro]` | `terraform destroy` |
-| `make fmt` | Formatea todos los archivos `.tf` recursivamente |
-| `make commit m="mensaje"` | `git add` + commit con mensaje |
-| `make push` | Commit + push |
-| `make switch` | Cambio interactivo de rama git |
-
----
-
-## Notas importantes
-
-- Los archivos `terraform.tfvars` y `env-*.sh` contienen credenciales y están en `.gitignore`. **Nunca se suben al repositorio.**
-- El provider `bpg/proxmox` requiere acceso SSH al nodo Proxmox además de la API. Esto es necesario para subir snippets de cloud-init.
-- El agente QEMU (`agent_enabled`) debe estar en `false` si la imagen base no tiene `qemu-guest-agent` instalado; de lo contrario Terraform esperará indefinidamente.
-- Para producción, sustituir `vm_password` por autenticación con clave SSH pública.
-
----
-
-## Pendiente
-
-- [ ] Backend remoto para `terraform.tfstate` (PostgreSQL en LXC o similar) para trabajo en equipo con bloqueo de estado.
+> Para equipos o CI/CD, se recomienda migrar a un backend remoto (S3, Terraform Cloud, etc.) para cada capa.

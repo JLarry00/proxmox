@@ -30,6 +30,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   initialization {
     datastore_id      = var.disk_datastore_id
+    interface         = "ide2"
     user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
 
     ip_config {

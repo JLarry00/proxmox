@@ -23,7 +23,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   disk {
     datastore_id = var.disk_datastore_id
-    file_id      = "local:iso/${each.value.os_image}.img"
+    file_id      = each.value.image_id
     interface    = var.disk_interface
     size         = each.value.disk_size
     file_format  = "raw"

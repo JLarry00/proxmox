@@ -10,7 +10,7 @@ variable "vms" {
     cpu_cores = number
     memory_mb = number
     disk_size = number
-    os_image  = string
+    image_id  = string
   }))
 }
 
@@ -22,12 +22,6 @@ variable "vm_id_base" {
 variable "gateway" {
   type        = string
   description = "Puerta de enlace por defecto para las VMs."
-}
-
-variable "dns_servers" {
-  type        = list(string)
-  description = "Lista de servidores DNS."
-  default     = []
 }
 
 variable "bios" {
