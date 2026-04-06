@@ -67,8 +67,11 @@ help:
 	@printf "  make destroy-templates     elimina plantillas del estado de Proxmox\n"
 	@printf "\n"
 	@printf "$(_B)-- Git ----------------------------------------------------------$(_X)\n"
+	@printf "  make fmt                   formatea el codigo\n"
 	@printf "  make commit m=\"mensaje\"    git add + commit\n"
+	@printf "  make fcommit m=\"mensaje\"   git add + commit (sin confirmacion)\n"
 	@printf "  make push                  commit + push\n"
+	@printf "  make fpush                 commit + push (sin confirmacion)\n"
 	@printf "  make switch                cambiar de rama\n"
 	@printf "\n"
 

@@ -13,36 +13,36 @@ Estado actual de los estados Terraform:
 - [x] `make download-images` — descarga `noble-server-cloudimg-amd64.img`
 - [x] `make init`
 - [x] `make apply` con `vms_from_image` activo — VMs arrancadas y accesibles
-- [ ] Verificar que tras un segundo `make apply` sin cambios → "No changes"
-- [ ] `make destroy` — destruye las VMs pero la imagen permanece en Proxmox
-- [ ] `make download-images` después del destroy → confirmar que NO re-descarga (idempotente)
+- [x] Verificar que tras un segundo `make apply` sin cambios → "No changes"
+- [x] `make destroy` — destruye las VMs pero la imagen permanece en Proxmox
+- [x] `make download-images` después del destroy → confirmar que NO re-descarga (idempotente)
 
 ---
 
 ## Flujo 2: templates/ → vm-from-clone
 
-- [ ] `make init-templates`
-- [ ] Añadir una entrada a `templates/dev.tfvars` (p.ej. VM ID 9000, `image_key = "ubuntu-24-04"`)
-- [ ] `make build-templates` — crea la VM plantilla en Proxmox
-- [ ] Verificar en la UI de Proxmox que aparece marcada como "template"
-- [ ] En `deploy/dev.tfvars`: activar `vms_from_clone` con `template_name` apuntando a la plantilla
-- [ ] `make apply` — clona la plantilla y levanta la VM
-- [ ] Verificar que la VM clonada arranca y es accesible por SSH
-- [ ] `make destroy` — destruye las VMs clonadas, la plantilla debe permanecer
-- [ ] `make destroy-templates` — elimina la plantilla; verificar que desaparece de Proxmox
+- [x] `make init-templates`
+- [x] Añadir una entrada a `templates/dev.tfvars` (p.ej. VM ID 9000, `image_key = "ubuntu-24-04"`)
+- [x] `make build-templates` — crea la VM plantilla en Proxmox
+- [x] Verificar en la UI de Proxmox que aparece marcada como "template"
+- [x] En `deploy/dev.tfvars`: activar `vms_from_clone` con `template_name` apuntando a la plantilla
+- [x] `make apply` — clona la plantilla y levanta la VM
+- [x] Verificar que la VM clonada arranca y es accesible por SSH
+- [x] `make destroy` — destruye las VMs clonadas, la plantilla debe permanecer
+- [x] `make destroy-templates` — elimina la plantilla; verificar que desaparece de Proxmox
 
 ---
 
 ## Flujo 3: flujo completo 3 capas (images/ → templates/ → deploy/ clone)
 
-- [ ] Partir de estado limpio (sin recursos en ninguna capa)
-- [ ] `make init-images && make download-images`
-- [ ] `make init-templates && make build-templates`
-- [ ] `make init && make apply` con `vms_from_clone`
-- [ ] Verificar IPs en el output `vms_from_clone_ips`
-- [ ] `make destroy` → solo VMs
-- [ ] `make destroy-templates` → solo plantilla
-- [ ] `make destroy-images` → imagen eliminada de Proxmox
+- [x] Partir de estado limpio (sin recursos en ninguna capa)
+- [x] `make init-images && make download-images`
+- [x] `make init-templates && make build-templates`
+- [x] `make init && make apply` con `vms_from_clone`
+- [x] Verificar IPs en el output `vms_from_clone_ips`
+- [x] `make destroy` → solo VMs
+- [x] `make destroy-templates` → solo plantilla
+- [x] `make destroy-images` → imagen eliminada de Proxmox
 
 ---
 
@@ -58,23 +58,23 @@ Estado actual de los estados Terraform:
 
 ## Flujo 5: makefile — confirmaciones y seguridad
 
-- [ ] `make apply` en entorno dev → pide confirmación una vez
-- [ ] `make apply` en entorno dev → responder "N" → cancela sin error (`make: ***` no aparece)
-- [ ] `make fapply` en entorno dev → aplica sin confirmación
-- [ ] `make use-pro && make fapply` → debe bloquearse con mensaje de error
-- [ ] `make apply-pro` → muestra recuadro rojo de advertencia y pide confirmación
-- [ ] `make apply-pro` → responder "N" → cancela sin error
-- [ ] `make plan-dev` y `make plan-pro` → muestran el entorno correcto al final
-- [ ] `make init` → muestra el entorno activo al final (sin pedir confirmación)
+- [x] `make apply` en entorno dev → pide confirmación una vez
+- [x] `make apply` en entorno dev → responder "N" → cancela sin error (`make: ***` no aparece)
+- [x] `make fapply` en entorno dev → aplica sin confirmación
+- [x] `make use-pro && make fapply` → debe bloquearse con mensaje de error
+- [x] `make apply-pro` → muestra recuadro rojo de advertencia y pide confirmación
+- [x] `make apply-pro` → responder "N" → cancela sin error
+- [x] `make plan-dev` y `make plan-pro` → muestran el entorno correcto al final
+- [x] `make init` → muestra el entorno activo al final (sin pedir confirmación)
 
 ---
 
 ## Flujo 6: destroy-images con VMs activas
 
-- [ ] Tener VMs en `deploy/` usando una imagen de `images/`
-- [ ] `make destroy-images` — Terraform debe permitirlo (estados separados)
-- [ ] Verificar que las VMs existentes siguen funcionando (el disco ya estaba clonado)
-- [ ] Confirmar que un nuevo `make apply` fallaría al no encontrar la imagen (image_id resuelto a vacío)
+- [x] Tener VMs en `deploy/` usando una imagen de `images/`
+- [x] `make destroy-images` — Terraform debe permitirlo (estados separados)
+- [x] Verificar que las VMs existentes siguen funcionando (el disco ya estaba clonado)
+- [x] Confirmar que un nuevo `make apply` fallaría al no encontrar la imagen (image_id resuelto a vacío)
 
 ---
 
@@ -89,10 +89,10 @@ Estado actual de los estados Terraform:
 
 ## Flujo 8: múltiples VMs simultáneas
 
-- [ ] Añadir 3+ VMs en `vms_from_image` con IPs distintas
-- [ ] `make apply` — verificar si ocurre el error de race condition en snippets de cloud-init
-- [ ] Si ocurre: segundo `make apply` debe completarlo sin errores
-- [ ] Verificar que todas las VMs tienen IP asignada en el output
+- [x] Añadir 3+ VMs en `vms_from_image` con IPs distintas
+- [x] `make apply` — verificar si ocurre el error de race condition en snippets de cloud-init
+- [x] Si ocurre: segundo `make apply` debe completarlo sin errores
+- [x] Verificar que todas las VMs tienen IP asignada en el output
 
 ---
 
