@@ -31,6 +31,32 @@ define _env_reminder
 	fi
 endef
 
+define _load_env
+	$(call _load_env_for,$(ENV))
+endef
+
+define _load_env_for
+	_env_name="$(1)"; \
+	_env_script="scripts/env-$${_env_name}.sh"; \
+	if [ -f "$$_env_script" ]; then \
+		source "$$_env_script"; \
+	else \
+		printf "  Usando variables de entorno ya exportadas para %s.\n" "$$_env_name"; \
+	fi; \
+	_missing=0; \
+	for _var in PROXMOX_VE_ENDPOINT PROXMOX_VE_API_TOKEN TF_VAR_proxmox_ssh_password TF_VAR_proxmox_node; do \
+		if [ -z "$${!_var}" ]; then \
+			printf "  $(_R)Falta la variable de entorno %s$(_X)\n" "$$_var"; \
+			_missing=1; \
+		fi; \
+	done; \
+	if [ "$$_missing" = "1" ]; then \
+		printf "\n  Define esas variables en tu shell o pipeline"; \
+		printf " (o crea %s para uso local).\n\n" "$$_env_script"; \
+		exit 1; \
+	fi
+endef
+
 all: help
 
 help:
@@ -56,6 +82,9 @@ help:
 	@printf "  make fapply / fdestroy          (entorno activo, bloqueado si es pro)\n"
 	@printf "  make fapply-dev / fdestroy-dev\n"
 	@printf "\n"
+	@printf "$(_B)-- CI/CD --------------------------------------------------------$(_X)\n"
+	@printf "  make ci-init / ci-plan / ci-apply / ci-destroy\n"
+	@printf "\n"
 	@printf "$(_B)-- Capa images/ ------------------------------------------------$(_X)\n"
 	@printf "  make init-images           terraform init en images/\n"
 	@printf "  make download-images       descarga imágenes (apply en images/)\n"
@@ -78,6 +107,7 @@ help:
 .PHONY: use-dev use-pro init plan apply destroy \
         plan-dev plan-pro apply-dev apply-pro destroy-dev destroy-pro \
         fapply fdestroy fapply-dev fdestroy-dev \
+        ci-init ci-plan ci-apply ci-destroy \
         init-images download-images destroy-images \
         init-templates build-templates destroy-templates \
         fmt commit fcommit push fpush switch help
@@ -86,16 +116,16 @@ help:
 
 use-dev:
 	@echo "ENV=dev" > .terraform-env
-	@printf "  Entorno activo: $(_Y)dev$(_X) — recuerda: source scripts/env-dev.sh\n"
+	@printf "  Entorno activo: $(_Y)dev$(_X) — exporta variables o usa scripts/env-dev.sh\n"
 
 use-pro:
 	@echo "ENV=pro" > .terraform-env
-	@printf "  Entorno activo: $(_RB) PRO $(_X) — recuerda: source scripts/env-pro.sh\n"
+	@printf "  Entorno activo: $(_RB) PRO $(_X) — exporta variables o usa scripts/env-pro.sh\n"
 
 # ── init (sin entorno, muestra recordatorio al final) ─────────────
 
 init:
-	@source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform init
+	@$(call _load_env) && cd $(DEPLOY_DIR) && terraform init
 	@$(call _env_reminder)
 
 # ── plan ──────────────────────────────────────────────────────────
@@ -109,14 +139,14 @@ plan:
 		[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	fi; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform plan -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(DEPLOY_DIR) && terraform plan -var-file=$(ENV).tfvars; \
 		$(call _env_reminder); \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
 
 plan-dev:
-	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform plan -var-file=dev.tfvars
+	@$(call _load_env_for,dev) && cd $(DEPLOY_DIR) && terraform plan -var-file=dev.tfvars
 	@printf "\n$(_Y)  Entorno activo : dev$(_X)\n\n"
 
 plan-pro:
@@ -126,7 +156,7 @@ plan-pro:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform plan -var-file=pro.tfvars; \
+		$(call _load_env_for,pro) && cd $(DEPLOY_DIR) && terraform plan -var-file=pro.tfvars; \
 		printf "\n$(_RB)   Entorno activo : PRO   $(_X)\n\n"; \
 	else \
 		printf "  Cancelado.\n\n"; \
@@ -145,7 +175,7 @@ apply:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -156,7 +186,7 @@ apply-dev:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars; \
+		$(call _load_env_for,dev) && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -168,7 +198,7 @@ apply-pro:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=pro.tfvars; \
+		$(call _load_env_for,pro) && cd $(DEPLOY_DIR) && terraform apply -var-file=pro.tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -186,7 +216,7 @@ destroy:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -197,7 +227,7 @@ destroy-dev:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars; \
+		$(call _load_env_for,dev) && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -209,7 +239,7 @@ destroy-pro:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-pro.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=pro.tfvars; \
+		$(call _load_env_for,pro) && cd $(DEPLOY_DIR) && terraform destroy -var-file=pro.tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -220,26 +250,26 @@ fapply:
 	@if [ "$(ENV)" = "pro" ]; then \
 		printf "\n$(_R)  Force no permitido en pro.$(_X) Usa: make apply-pro\n\n"; \
 	else \
-		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(DEPLOY_DIR) && terraform apply -var-file=$(ENV).tfvars; \
 	fi
 
 fdestroy:
 	@if [ "$(ENV)" = "pro" ]; then \
 		printf "\n$(_R)  Force no permitido en pro.$(_X) Usa: make destroy-pro\n\n"; \
 	else \
-		source scripts/env-$(ENV).sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(DEPLOY_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
 	fi
 
 fapply-dev:
-	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars
+	@$(call _load_env_for,dev) && cd $(DEPLOY_DIR) && terraform apply -var-file=dev.tfvars
 
 fdestroy-dev:
-	@source scripts/env-dev.sh && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars
+	@$(call _load_env_for,dev) && cd $(DEPLOY_DIR) && terraform destroy -var-file=dev.tfvars
 
 # ── images/ ────────────────────────────────────────────────────────
 
 init-images:
-	@source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform init
+	@$(call _load_env) && cd $(IMAGES_DIR) && terraform init
 	@$(call _env_reminder)
 
 download-images:
@@ -253,7 +283,7 @@ download-images:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(IMAGES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -269,7 +299,7 @@ destroy-images:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(IMAGES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(IMAGES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -277,7 +307,7 @@ destroy-images:
 # ── templates/ ─────────────────────────────────────────────────────
 
 init-templates:
-	@source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform init
+	@$(call _load_env) && cd $(TEMPLATES_DIR) && terraform init
 	@$(call _env_reminder)
 
 build-templates:
@@ -291,7 +321,7 @@ build-templates:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(TEMPLATES_DIR) && terraform apply -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
@@ -307,10 +337,28 @@ destroy-templates:
 	read -p "  Confirmar? [y/N] " _ans; \
 	[ "$$_ans" = "y" ] || [ "$$_ans" = "Y" ] || _ok=no; \
 	if [ "$$_ok" = "yes" ]; then \
-		source scripts/env-$(ENV).sh && cd $(TEMPLATES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
+		$(call _load_env) && cd $(TEMPLATES_DIR) && terraform destroy -var-file=$(ENV).tfvars; \
 	else \
 		printf "  Cancelado.\n\n"; \
 	fi
+
+# ── CI/CD: sin prompts, variables desde el runner ──────────────────
+
+ci-init:
+	@$(call _load_env) && cd $(DEPLOY_DIR) && terraform init -input=false
+	@$(call _env_reminder)
+
+ci-plan:
+	@$(call _load_env) && cd $(DEPLOY_DIR) && terraform plan -input=false -var-file=$(ENV).tfvars
+	@$(call _env_reminder)
+
+ci-apply:
+	@$(call _load_env) && cd $(DEPLOY_DIR) && terraform apply -input=false -auto-approve -var-file=$(ENV).tfvars
+	@$(call _env_reminder)
+
+ci-destroy:
+	@$(call _load_env) && cd $(DEPLOY_DIR) && terraform destroy -input=false -auto-approve -var-file=$(ENV).tfvars
+	@$(call _env_reminder)
 
 # ── Formato ────────────────────────────────────────────────────────
 

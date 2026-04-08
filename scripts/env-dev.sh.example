@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Copia este archivo a scripts/env-dev.sh y rellena tus valores locales.
+
+export PROXMOX_VE_ENDPOINT="https://PROXMOX_DEV_IP:8006/"
+export PROXMOX_VE_API_TOKEN="USUARIO@pve!terraform=TOKEN_DEV"
+export TF_VAR_proxmox_ssh_password="PASSWORD_ROOT_DEV"
+export TF_VAR_proxmox_node="proxmoxdev01"

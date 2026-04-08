@@ -37,11 +37,18 @@ Al tener estados separados, un `make destroy` en `deploy/` **nunca** afecta a la
 ### 1. Primera vez: preparar entorno
 
 ```bash
-# Copia y edita los scripts de credenciales (están en .gitignore)
+# Opción A: local, con script ignorado por git
 cp scripts/env-dev.sh.example scripts/env-dev.sh
 # Edita scripts/env-dev.sh con tu endpoint, API token, etc.
-source scripts/env-dev.sh
+
+# Opción B: shell actual o pipeline CI/CD
+export PROXMOX_VE_ENDPOINT="https://proxmox-dev.ejemplo:8006/"
+export PROXMOX_VE_API_TOKEN="usuario@pve!terraform=token"
+export TF_VAR_proxmox_ssh_password="********"
+export TF_VAR_proxmox_node="proxmoxdev01"
 ```
+
+Los comandos `make` intentan cargar `scripts/env-<entorno>.sh` si existe. Si no existe, usan directamente las variables ya exportadas por tu shell o runner.
 
 ### 2. (Opcional) Descargar imágenes
 
@@ -81,6 +88,28 @@ make destroy     # Solo destruye las VMs de deploy/
                  # Las imágenes y plantillas permanecen intactas
 ```
 
+### 6. Pipeline / CI-CD
+
+Para automatizar despliegues, exporta las mismas variables de entorno en el runner y usa los targets no interactivos:
+
+```bash
+make use-dev
+make ci-init
+make ci-plan
+make ci-apply
+```
+
+Para producción:
+
+```bash
+make use-pro
+make ci-init
+make ci-plan
+make ci-apply
+```
+
+Los targets `ci-*` ejecutan Terraform con `-input=false` y, en `apply` y `destroy`, con `-auto-approve`.
+
 ---
 
 ## Comandos `make` disponibles
@@ -112,6 +141,9 @@ make destroy-dev / destroy-pro
 # Sin confirmación (solo dev):
 make fapply / fdestroy
 make fapply-dev / fdestroy-dev
+
+# CI/CD:
+make ci-init / ci-plan / ci-apply / ci-destroy
 ```
 
 ### Capa images/
@@ -155,7 +187,7 @@ vms_from_image = {
 
 ## Credenciales
 
-Las credenciales **nunca** van en los `.tfvars`. Se inyectan como variables de entorno desde `scripts/env-dev.sh` / `scripts/env-pro.sh` (ignorados por git).
+Las credenciales **nunca** van en los `.tfvars`. Se inyectan como variables de entorno, ya sea desde `scripts/env-dev.sh` / `scripts/env-pro.sh` en local, o desde variables protegidas del pipeline.
 
 | Variable de entorno       | Descripción |
 |---------------------------|-------------|
@@ -163,6 +195,8 @@ Las credenciales **nunca** van en los `.tfvars`. Se inyectan como variables de e
 | `PROXMOX_VE_API_TOKEN`    | Token de API (`user@realm!token=secret`) |
 | `TF_VAR_proxmox_ssh_password` | Contraseña SSH del nodo (para uploads via SSH) |
 | `TF_VAR_proxmox_node`     | Nombre del nodo Proxmox (`proxmoxdev01`) |
+
+Si falta alguna de estas variables, el `makefile` aborta antes de invocar Terraform.
 
 ---
 
